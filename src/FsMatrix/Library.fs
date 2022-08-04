@@ -7,19 +7,36 @@ type MatrixError = {
 
 module Matrix =
 
+    open System.Net
     open System.Text.Json
     open System.Text.Json.Serialization
     open FsHttp
-    
+
     GlobalConfig.Json.defaultJsonSerializerOptions <-
         let options = JsonSerializerOptions()
         options.Converters.Add(JsonFSharpConverter())
         options
 
-    let getBaseUrlFromHomeserverName name =
+    let private getBaseUrl wellKnownUrl =
         http {
-            GET (sprintf "https://%s/.well-known/matrix/client" name) 
+            GET wellKnownUrl
         }
         |> Request.sendAsync
-        |> Async.map Response.toJson
-        |> Async.map (fun json -> (json?``m.homeserver``).GetString())
+
+    let getBaseUrlFromHomeserverName name = async {
+        let! wkResult =
+            sprintf "https://%s/.well-known/matrix/client" name
+            |> getBaseUrl
+
+        return wkResult
+    }
+
+        // |> Async.map (Response.expectHttpStatusCodes [HttpStatusCode.OK])
+        // |> Async.map (
+        //     function
+        //     | Error exp ->
+
+        // )
+
+        // |> Async.map Response.toJson
+        // |> Async.map (fun json -> json?``m.homeserver``?base_url.GetString())
